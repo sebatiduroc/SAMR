@@ -57,7 +57,7 @@
     z-index: 2;
     max-width: 680px;
     margin: 0 auto;
-    padding: 1.5rem 1.25rem 2rem;
+    padding: 1.25rem 1.1rem 1.25rem;
     min-height: 100vh;
     min-height: 100dvh;
     display: flex;
@@ -67,6 +67,19 @@
 
   .screen { display: none; animation: fadeUp 0.4s ease forwards; }
   .screen.active { display: flex; flex-direction: column; }
+
+  /* Quiz screen fills exact viewport — no scroll */
+  #quiz.active {
+    position: fixed;
+    inset: 0;
+    z-index: 2;
+    padding: 1rem 1.1rem 0.75rem;
+    max-width: 680px;
+    left: 0; right: 0;
+    margin: auto;
+    overflow: hidden;
+    justify-content: space-between;
+  }
 
   @keyframes fadeUp {
     from { opacity: 0; transform: translateY(20px); }
@@ -280,8 +293,9 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.75rem;
     flex-wrap: nowrap;
+    flex-shrink: 0;
   }
 
   .progress-track {
@@ -356,42 +370,44 @@
 
   .q-category {
     font-family: 'DM Mono', monospace;
-    font-size: 0.62rem;
-    letter-spacing: 0.2em;
+    font-size: 0.58rem;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
-    padding: 0.25rem 0.7rem;
+    padding: 0.18rem 0.55rem;
     border-radius: 3px;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
     display: inline-block;
     border: 1px solid;
+    flex-shrink: 0;
   }
 
   .q-text {
     font-family: 'Playfair Display', serif;
-    font-size: clamp(1.05rem, 4vw, 1.45rem);
+    font-size: clamp(0.92rem, 3.5vw, 1.2rem);
     font-weight: 700;
-    line-height: 1.45;
-    margin-bottom: 1.4rem;
+    line-height: 1.38;
+    margin-bottom: 0.65rem;
     color: var(--text);
+    flex-shrink: 0;
   }
 
-  .options-grid { display: grid; gap: 0.55rem; }
+  .options-grid { display: grid; gap: 0.4rem; flex-shrink: 0; }
 
   .option-btn {
     background: var(--surface);
     border: 1px solid var(--border);
     color: var(--text);
-    padding: 0.85rem 1rem;
-    border-radius: 8px;
+    padding: 0.6rem 0.85rem;
+    border-radius: 7px;
     cursor: pointer;
     text-align: left;
     font-family: 'DM Sans', sans-serif;
-    font-size: 0.88rem;
-    line-height: 1.45;
+    font-size: 0.82rem;
+    line-height: 1.35;
     transition: border-color 0.15s, background 0.15s, transform 0.15s;
     display: flex;
     align-items: flex-start;
-    gap: 0.7rem;
+    gap: 0.6rem;
     -webkit-appearance: none;
     width: 100%;
   }
@@ -432,41 +448,55 @@
   }
 
   .feedback-box {
-    margin-top: 0.9rem;
-    padding: 0.9rem 1rem;
-    border-radius: 8px;
+    margin-top: 0.5rem;
+    padding: 0.6rem 0.8rem;
+    border-radius: 7px;
     border: 1px solid;
-    font-size: 0.83rem;
-    line-height: 1.6;
+    font-size: 0.76rem;
+    line-height: 1.5;
     display: none;
     animation: fadeUp 0.3s ease;
+    flex-shrink: 0;
   }
   .feedback-box.show { display: block; }
   .feedback-box.correct-fb { border-color: rgba(0,212,164,0.3); background: rgba(0,212,164,0.05); }
   .feedback-box.wrong-fb { border-color: rgba(255,77,141,0.3); background: rgba(255,77,141,0.05); }
-  .feedback-title { font-weight: 600; margin-bottom: 0.3rem; font-size: 0.88rem; }
+  .feedback-title { font-weight: 600; margin-bottom: 0.2rem; font-size: 0.8rem; }
   .feedback-box.correct-fb .feedback-title { color: var(--S); }
   .feedback-box.wrong-fb .feedback-title { color: var(--R); }
 
   .btn-next {
-    margin-top: 0.9rem;
-    background: transparent;
+    margin-top: auto;
+    padding-top: 0.6rem;
+    padding-bottom: 0.6rem;
+    background: var(--surface);
     border: 1px solid var(--border);
     color: var(--text);
-    padding: 0.8rem 1.5rem;
+    padding: 0.7rem 1.25rem;
     font-family: 'DM Sans', sans-serif;
-    font-size: 0.88rem;
+    font-size: 0.85rem;
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s;
     display: none;
     align-self: flex-end;
+    margin-top: 0.5rem;
+    margin-bottom: 0.25rem;
+    flex-shrink: 0;
     -webkit-appearance: none;
   }
   .btn-next.show { display: block; }
   .btn-next:hover { border-color: var(--A); color: var(--A); transform: translateX(3px); }
 
-  /* ===== RESULT ===== */
+  /* Very small screens safety net */
+  @media (max-height: 640px) {
+    .q-text { font-size: 0.85rem; line-height: 1.3; margin-bottom: 0.45rem; }
+    .options-grid { gap: 0.28rem; }
+    .option-btn { padding: 0.45rem 0.75rem; font-size: 0.76rem; }
+    .feedback-box { font-size: 0.7rem; padding: 0.45rem 0.65rem; max-height: 4.5rem; overflow-y: auto; }
+    .quiz-header { margin-bottom: 0.45rem; }
+    .q-category { margin-bottom: 0.3rem; }
+  }
   .result-eyebrow {
     font-family: 'DM Mono', monospace;
     font-size: 0.65rem;
@@ -622,7 +652,6 @@
         <div class="rank-badge" id="rankBadge">Néophyte</div>
       </div>
     </div>
-
     <div class="q-category" id="qCategory"></div>
     <div class="q-text" id="qText"></div>
     <div class="options-grid" id="optionsGrid"></div>
