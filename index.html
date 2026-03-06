@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>SAMR — Le jeu</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --border: #1e1e2e;
+    --S: #00d4a4;
+    --A: #4da6ff;
+    --M: #ff8c42;
+    --R: #ff4d8d;
+    --text: #e8e8f0;
+    --muted: #6b6b8a;
+    --gold: #f5c842;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: 
+      radial-gradient(ellipse 60% 40% at 10% 20%, rgba(0,212,164,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 60% at 90% 80%, rgba(77,166,255,0.05) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 50% at 50% 50%, rgba(255,77,141,0.03) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .noise {
+    position: fixed;
+    inset: 0;
+    opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .container {
+    position: relative;
+    z-index: 2;
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 1.5rem 1.25rem 2rem;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .screen { display: none; animation: fadeUp 0.4s ease forwards; }
+  .screen.active { display: flex; flex-direction: column; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ===== INTRO ===== */
+  .intro-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    color: var(--S);
+    text-transform: uppercase;
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .intro-badge::before {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 2px;
+    background: var(--S);
+    flex-shrink: 0;
+  }
+
+  .intro-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(3rem, 15vw, 5.5rem);
+    font-weight: 900;
+    line-height: 0.9;
+    margin-bottom: 0.4rem;
+    letter-spacing: -0.02em;
+  }
+  .intro-title .letter-S { color: var(--S); }
+  .intro-title .letter-A { color: var(--A); }
+  .intro-title .letter-M { color: var(--M); }
+  .intro-title .letter-R { color: var(--R); }
+
+  .intro-lejeu {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1rem, 4vw, 1.4rem);
+    color: var(--muted);
+    margin-bottom: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .intro-sub {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin-bottom: 1.75rem;
+    font-weight: 300;
+    line-height: 1.65;
+  }
+
+  .samr-pills {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+    margin-bottom: 1.75rem;
+  }
+
+  .pill {
+    padding: 0.65rem 0.9rem;
+    border-radius: 6px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    border: 1px solid;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    position: relative;
+    user-select: none;
+  }
+  .pill:active { transform: scale(0.97) !important; }
+  .pill-label { opacity: 0.55; margin-right: 0.35em; }
+  .pill-S { color: var(--S); border-color: rgba(0,212,164,0.35); background: rgba(0,212,164,0.06); }
+  .pill-A { color: var(--A); border-color: rgba(77,166,255,0.35); background: rgba(77,166,255,0.06); }
+  .pill-M { color: var(--M); border-color: rgba(255,140,66,0.35); background: rgba(255,140,66,0.06); }
+  .pill-R { color: var(--R); border-color: rgba(255,77,141,0.35); background: rgba(255,77,141,0.06); }
+  .pill-S:hover { box-shadow: 0 0 14px rgba(0,212,164,0.25); transform: translateY(-2px); }
+  .pill-A:hover { box-shadow: 0 0 14px rgba(77,166,255,0.25); transform: translateY(-2px); }
+  .pill-M:hover { box-shadow: 0 0 14px rgba(255,140,66,0.25); transform: translateY(-2px); }
+  .pill-R:hover { box-shadow: 0 0 14px rgba(255,77,141,0.25); transform: translateY(-2px); }
+
+  .pill-hint {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.58rem;
+    color: currentColor;
+    letter-spacing: 0.02em;
+    opacity: 0.5;
+    display: block;
+    margin-top: 0.2rem;
+    font-weight: 300;
+  }
+
+  /* Definition modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(10,10,15,0.88);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    backdrop-filter: blur(6px);
+  }
+  .modal-overlay.open { display: flex; animation: fadeUp 0.25s ease; }
+  .modal-box {
+    background: var(--surface);
+    border: 1px solid;
+    border-radius: 12px;
+    padding: 1.75rem;
+    max-width: 400px;
+    width: 100%;
+    position: relative;
+  }
+  .modal-letter {
+    font-family: 'Playfair Display', serif;
+    font-size: 3.5rem;
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 0.25rem;
+  }
+  .modal-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    opacity: 0.6;
+    margin-bottom: 0.75rem;
+  }
+  .modal-zone {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.58rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 0.18rem 0.5rem;
+    border-radius: 3px;
+    border: 1px solid;
+    display: inline-block;
+    margin-bottom: 1rem;
+    opacity: 0.85;
+  }
+  .modal-desc {
+    font-size: 0.88rem;
+    line-height: 1.65;
+    color: var(--text);
+    opacity: 0.85;
+    margin-bottom: 0.75rem;
+  }
+  .modal-example {
+    font-size: 0.78rem;
+    line-height: 1.55;
+    color: var(--muted);
+    font-style: italic;
+  }
+  .modal-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: var(--border);
+    border: none;
+    color: var(--muted);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, color 0.2s;
+  }
+  .modal-close:hover { background: var(--R); color: white; }
+
+  .btn-start {
+    background: var(--S);
+    color: #0a0a0f;
+    border: none;
+    padding: 0.9rem 2rem;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.02em;
+    align-self: stretch;
+    text-align: center;
+    -webkit-appearance: none;
+  }
+  .btn-start:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,212,164,0.3); }
+  .btn-start:active { transform: scale(0.98); }
+
+  .intro-meta {
+    margin-top: 1rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-align: center;
+  }
+
+  /* ===== QUIZ ===== */
+  .quiz-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: nowrap;
+  }
+
+  .progress-track {
+    flex: 1;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    min-width: 0;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--S), var(--A));
+    border-radius: 2px;
+    transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  .q-counter {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .score-rank-block {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-shrink: 0;
+  }
+  .score-pts {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--gold);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .rank-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.55rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.15rem 0.45rem;
+    border-radius: 3px;
+    border: 1px solid;
+    transition: color 0.4s, border-color 0.4s;
+    white-space: nowrap;
+  }
+
+  /* Level-up toast */
+  .levelup-toast {
+    position: fixed;
+    top: 1.2rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(-90px);
+    background: var(--gold);
+    color: #0a0a0f;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0.5rem 1.25rem;
+    border-radius: 20px;
+    z-index: 200;
+    transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .levelup-toast.show { transform: translateX(-50%) translateY(0); }
+
+  .q-category {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 0.25rem 0.7rem;
+    border-radius: 3px;
+    margin-bottom: 1rem;
+    display: inline-block;
+    border: 1px solid;
+  }
+
+  .q-text {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.05rem, 4vw, 1.45rem);
+    font-weight: 700;
+    line-height: 1.45;
+    margin-bottom: 1.4rem;
+    color: var(--text);
+  }
+
+  .options-grid { display: grid; gap: 0.55rem; }
+
+  .option-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.85rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: left;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    line-height: 1.45;
+    transition: border-color 0.15s, background 0.15s, transform 0.15s;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7rem;
+    -webkit-appearance: none;
+    width: 100%;
+  }
+  .option-btn:hover:not(:disabled) { border-color: rgba(255,255,255,0.2); transform: translateX(3px); }
+  .option-btn:active:not(:disabled) { transform: scale(0.99); }
+  .option-btn:disabled { cursor: default; transform: none !important; }
+
+  .option-letter {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    font-weight: 500;
+    padding: 0.16rem 0.32rem;
+    border-radius: 3px;
+    background: var(--border);
+    color: var(--muted);
+    min-width: 1.5rem;
+    text-align: center;
+    flex-shrink: 0;
+    margin-top: 0.12rem;
+    transition: all 0.2s;
+  }
+
+  .option-btn.correct { border-color: var(--S); background: rgba(0,212,164,0.08); animation: pulseCorrect 0.4s ease; }
+  .option-btn.correct .option-letter { background: var(--S); color: #0a0a0f; }
+  .option-btn.wrong { border-color: var(--R); background: rgba(255,77,141,0.08); animation: shake 0.4s ease; }
+  .option-btn.wrong .option-letter { background: var(--R); color: #fff; }
+  .option-btn.reveal { border-color: rgba(0,212,164,0.4); background: rgba(0,212,164,0.05); }
+
+  @keyframes pulseCorrect {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.015); }
+    100% { transform: scale(1); }
+  }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+  }
+
+  .feedback-box {
+    margin-top: 0.9rem;
+    padding: 0.9rem 1rem;
+    border-radius: 8px;
+    border: 1px solid;
+    font-size: 0.83rem;
+    line-height: 1.6;
+    display: none;
+    animation: fadeUp 0.3s ease;
+  }
+  .feedback-box.show { display: block; }
+  .feedback-box.correct-fb { border-color: rgba(0,212,164,0.3); background: rgba(0,212,164,0.05); }
+  .feedback-box.wrong-fb { border-color: rgba(255,77,141,0.3); background: rgba(255,77,141,0.05); }
+  .feedback-title { font-weight: 600; margin-bottom: 0.3rem; font-size: 0.88rem; }
+  .feedback-box.correct-fb .feedback-title { color: var(--S); }
+  .feedback-box.wrong-fb .feedback-title { color: var(--R); }
+
+  .btn-next {
+    margin-top: 0.9rem;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.8rem 1.5rem;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: none;
+    align-self: flex-end;
+    -webkit-appearance: none;
+  }
+  .btn-next.show { display: block; }
+  .btn-next:hover { border-color: var(--A); color: var(--A); transform: translateX(3px); }
+
+  /* ===== RESULT ===== */
+  .result-eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+  .result-score-big {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(4.5rem, 18vw, 8rem);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    margin-bottom: 0.4rem;
+  }
+  .result-label { font-size: 1rem; color: var(--muted); margin-bottom: 0.75rem; font-weight: 300; }
+  .result-rank-final {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 0.3rem 0.9rem;
+    border-radius: 4px;
+    border: 1px solid;
+    display: inline-block;
+    margin-bottom: 1.5rem;
+  }
+  .result-message {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.1rem, 4vw, 1.4rem);
+    font-weight: 700;
+    margin-bottom: 0.65rem;
+    line-height: 1.4;
+  }
+  .result-desc {
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1.7;
+    margin-bottom: 1.75rem;
+  }
+
+  .stars-row { display: flex; gap: 0.3rem; margin-bottom: 1.5rem; }
+  .star { font-size: 1.5rem; }
+  .star.lit { animation: starPop 0.4s ease; }
+  @keyframes starPop {
+    0% { transform: scale(0.4); }
+    70% { transform: scale(1.3); }
+    100% { transform: scale(1); }
+  }
+
+  .divider { height: 1px; background: var(--border); margin: 1.5rem 0; }
+
+  .samr-recap {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.55rem;
+    margin-bottom: 1.75rem;
+  }
+  .recap-card { padding: 0.9rem; border-radius: 8px; border: 1px solid; }
+  .recap-card-letter { font-family: 'Playfair Display', serif; font-size: 1.7rem; font-weight: 900; line-height: 1; margin-bottom: 0.25rem; }
+  .recap-card-name { font-family: 'DM Mono', monospace; font-size: 0.58rem; letter-spacing: 0.15em; text-transform: uppercase; opacity: 0.65; margin-bottom: 0.35rem; }
+  .recap-card-desc { font-size: 0.72rem; line-height: 1.5; opacity: 0.8; }
+  .card-S { color: var(--S); border-color: rgba(0,212,164,0.2); background: rgba(0,212,164,0.04); }
+  .card-A { color: var(--A); border-color: rgba(77,166,255,0.2); background: rgba(77,166,255,0.04); }
+  .card-M { color: var(--M); border-color: rgba(255,140,66,0.2); background: rgba(255,140,66,0.04); }
+  .card-R { color: var(--R); border-color: rgba(255,77,141,0.2); background: rgba(255,77,141,0.04); }
+
+  .result-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+  .btn-replay {
+    flex: 1;
+    background: var(--gold); color: #0a0a0f;
+    border: none; padding: 0.9rem 1.5rem;
+    font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 600;
+    border-radius: 6px; cursor: pointer; transition: all 0.2s; text-align: center;
+    -webkit-appearance: none;
+  }
+  .btn-replay:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(245,200,66,0.3); }
+  .btn-secondary {
+    background: transparent; border: 1px solid var(--border);
+    color: var(--muted); padding: 0.9rem 1.25rem;
+    font-family: 'DM Sans', sans-serif; font-size: 0.95rem;
+    border-radius: 6px; cursor: pointer; transition: all 0.2s;
+    -webkit-appearance: none;
+  }
+  .btn-secondary:hover { border-color: var(--muted); color: var(--text); }
+</style>
+</head>
+<body>
+<div class="noise"></div>
+
+<!-- Level-up toast -->
+<div class="levelup-toast" id="levelupToast"></div>
+
+<!-- Definition modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal-box" id="modalBox">
+    <button class="modal-close" onclick="closeModalDirect()">×</button>
+    <div class="modal-letter" id="modalLetter"></div>
+    <div class="modal-name" id="modalName"></div>
+    <div class="modal-zone" id="modalZone"></div>
+    <div class="modal-desc" id="modalDesc"></div>
+    <div class="modal-example" id="modalExample"></div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- INTRO -->
+  <div id="intro" class="screen active">
+    <div class="intro-badge">Modèle pédagogique numérique</div>
+    <div class="intro-title">
+      <span class="letter-S">S</span><span class="letter-A">A</span><span class="letter-M">M</span><span class="letter-R">R</span>
+    </div>
+    <div class="intro-lejeu">Le jeu</div>
+
+    <p class="intro-sub">
+      Créé par Ruben Puentedura, le modèle SAMR décrit quatre niveaux d'intégration du numérique en éducation. Appuyez sur chaque étiquette pour découvrir sa définition, puis testez vos connaissances.
+    </p>
+
+    <div class="samr-pills">
+      <div class="pill pill-S" onclick="showDef('S')">
+        <span class="pill-label">S</span> Substitution
+        <span class="pill-hint">↗ Voir la définition</span>
+      </div>
+      <div class="pill pill-A" onclick="showDef('A')">
+        <span class="pill-label">A</span> Augmentation
+        <span class="pill-hint">↗ Voir la définition</span>
+      </div>
+      <div class="pill pill-M" onclick="showDef('M')">
+        <span class="pill-label">M</span> Modification
+        <span class="pill-hint">↗ Voir la définition</span>
+      </div>
+      <div class="pill pill-R" onclick="showDef('R')">
+        <span class="pill-label">R</span> Redéfinition
+        <span class="pill-hint">↗ Voir la définition</span>
+      </div>
+    </div>
+
+    <button class="btn-start" onclick="startQuiz()">Commencer les 10 questions →</button>
+    <div class="intro-meta">10 questions · Réponse unique · Score immédiat</div>
+  </div>
+
+  <!-- QUIZ -->
+  <div id="quiz" class="screen">
+    <div class="quiz-header">
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="q-counter" id="qCounter">1/10</div>
+      <div class="score-rank-block">
+        <div class="score-pts" id="scoreDisplay">★ 0</div>
+        <div class="rank-badge" id="rankBadge">Néophyte</div>
+      </div>
+    </div>
+
+    <div class="q-category" id="qCategory"></div>
+    <div class="q-text" id="qText"></div>
+    <div class="options-grid" id="optionsGrid"></div>
+    <div class="feedback-box" id="feedbackBox">
+      <div class="feedback-title" id="feedbackTitle"></div>
+      <div id="feedbackText"></div>
+    </div>
+    <button class="btn-next" id="btnNext" onclick="nextQuestion()">Question suivante →</button>
+  </div>
+
+  <!-- RESULT -->
+  <div id="result" class="screen">
+    <div class="result-eyebrow">Résultat final</div>
+    <div class="result-score-big" id="resultScore"></div>
+    <div class="result-label">sur 10 questions</div>
+    <div class="result-rank-final" id="resultRankFinal"></div>
+    <div class="stars-row" id="starsRow"></div>
+    <div class="result-message" id="resultMessage"></div>
+    <div class="result-desc" id="resultDesc"></div>
+
+    <div class="divider"></div>
+
+    <div class="samr-recap">
+      <div class="recap-card card-S">
+        <div class="recap-card-letter">S</div>
+        <div class="recap-card-name">Substitution</div>
+        <div class="recap-card-desc">La techno remplace l'outil sans changement fonctionnel.</div>
+      </div>
+      <div class="recap-card card-A">
+        <div class="recap-card-letter">A</div>
+        <div class="recap-card-name">Augmentation</div>
+        <div class="recap-card-desc">La techno améliore fonctionnellement la tâche.</div>
+      </div>
+      <div class="recap-card card-M">
+        <div class="recap-card-letter">M</div>
+        <div class="recap-card-name">Modification</div>
+        <div class="recap-card-desc">La tâche est significativement redessinée.</div>
+      </div>
+      <div class="recap-card card-R">
+        <div class="recap-card-letter">R</div>
+        <div class="recap-card-name">Redéfinition</div>
+        <div class="recap-card-desc">Des tâches auparavant impossibles deviennent réalité.</div>
+      </div>
+    </div>
+
+    <div class="result-actions">
+      <button class="btn-replay" onclick="startQuiz()">↺ Rejouer</button>
+      <button class="btn-secondary" onclick="showIntro()">← Accueil</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ===== AUDIO =====
+let audioCtx = null;
+function getCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playSuccess() {
+  try {
+    const ctx = getCtx();
+    const t = ctx.currentTime;
+    [523, 659, 784, 1047].forEach((freq, i) => {
+      const osc = ctx.createOscillator(), g = ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      g.gain.setValueAtTime(0, t + i*0.1);
+      g.gain.linearRampToValueAtTime(0.18, t + i*0.1 + 0.03);
+      g.gain.exponentialRampToValueAtTime(0.001, t + i*0.1 + 0.28);
+      osc.start(t + i*0.1); osc.stop(t + i*0.1 + 0.3);
+    });
+  } catch(e) {}
+}
+
+function playFail() {
+  try {
+    const ctx = getCtx();
+    const t = ctx.currentTime;
+    [330, 294, 247].forEach((freq, i) => {
+      const osc = ctx.createOscillator(), g = ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(freq + 15, t + i*0.18);
+      osc.frequency.linearRampToValueAtTime(freq - 15, t + i*0.18 + 0.32);
+      g.gain.setValueAtTime(0, t + i*0.18);
+      g.gain.linearRampToValueAtTime(0.1, t + i*0.18 + 0.04);
+      g.gain.exponentialRampToValueAtTime(0.001, t + i*0.18 + 0.35);
+      osc.start(t + i*0.18); osc.stop(t + i*0.18 + 0.38);
+    });
+  } catch(e) {}
+}
+
+function playLevelUp() {
+  try {
+    const ctx = getCtx();
+    const t = ctx.currentTime;
+    [440, 554, 659, 880].forEach((freq, i) => {
+      const osc = ctx.createOscillator(), g = ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      g.gain.setValueAtTime(0.2, t + i*0.08);
+      g.gain.exponentialRampToValueAtTime(0.001, t + i*0.08 + 0.32);
+      osc.start(t + i*0.08); osc.stop(t + i*0.08 + 0.35);
+    });
+  } catch(e) {}
+}
+
+// ===== RANKS =====
+const RANKS = [
+  { min: 0,  label: 'Néophyte',    color: '#6b6b8a', border: 'rgba(107,107,138,0.45)' },
+  { min: 2,  label: 'Aventurier',  color: '#4da6ff', border: 'rgba(77,166,255,0.45)' },
+  { min: 4,  label: 'Découvreur',  color: '#ff8c42', border: 'rgba(255,140,66,0.45)' },
+  { min: 6,  label: 'Connaisseur', color: '#00d4a4', border: 'rgba(0,212,164,0.45)' },
+  { min: 8,  label: 'Expert',      color: '#f5c842', border: 'rgba(245,200,66,0.45)' },
+];
+
+function getRank(s) {
+  let r = RANKS[0];
+  for (const rank of RANKS) { if (s >= rank.min) r = rank; }
+  return r;
+}
+
+// ===== DEFINITIONS =====
+const DEFS = {
+  S: {
+    letter: 'S', name: 'Substitution',
+    zone: 'Zone Amélioration', zoneColor: '#00d4a4', zoneBorder: 'rgba(0,212,164,0.35)',
+    color: '#00d4a4', border: 'rgba(0,212,164,0.35)',
+    desc: "La technologie remplace un outil existant sans apporter de changement fonctionnel. La tâche reste identique dans sa nature — seul le support change.",
+    example: "Ex. : Les élèves tapent leur rédaction sur ordinateur au lieu de l'écrire à la main."
+  },
+  A: {
+    letter: 'A', name: 'Augmentation',
+    zone: 'Zone Amélioration', zoneColor: '#4da6ff', zoneBorder: 'rgba(77,166,255,0.35)',
+    color: '#4da6ff', border: 'rgba(77,166,255,0.35)',
+    desc: "La technologie remplace un outil tout en apportant une amélioration fonctionnelle notable. La tâche reste similaire, mais devient plus efficace ou enrichie.",
+    example: "Ex. : Le traitement de texte avec correcteur orthographique améliore l'acte d'écriture."
+  },
+  M: {
+    letter: 'M', name: 'Modification',
+    zone: 'Zone Transformation', zoneColor: '#ff8c42', zoneBorder: 'rgba(255,140,66,0.35)',
+    color: '#ff8c42', border: 'rgba(255,140,66,0.35)',
+    desc: "La technologie permet une reconfiguration significative de la tâche. L'objectif pédagogique peut rester similaire, mais la manière de l'atteindre est profondément redessinée.",
+    example: "Ex. : Des élèves co-rédigent un document partagé en ligne avec commentaires en temps réel."
+  },
+  R: {
+    letter: 'R', name: 'Redéfinition',
+    zone: 'Zone Transformation', zoneColor: '#ff4d8d', zoneBorder: 'rgba(255,77,141,0.35)',
+    color: '#ff4d8d', border: 'rgba(255,77,141,0.35)',
+    desc: "La technologie permet la création de tâches entièrement nouvelles, auparavant impossibles. C'est le niveau le plus transformateur du modèle SAMR.",
+    example: "Ex. : Des élèves créent un podcast diffusé mondialement et reçoivent des retours d'auditeurs du monde entier."
+  }
+};
+
+function showDef(key) {
+  const d = DEFS[key];
+  document.getElementById('modalLetter').textContent = d.letter;
+  document.getElementById('modalLetter').style.color = d.color;
+  document.getElementById('modalName').textContent = d.name;
+  document.getElementById('modalZone').textContent = d.zone;
+  document.getElementById('modalZone').style.color = d.zoneColor;
+  document.getElementById('modalZone').style.borderColor = d.zoneBorder;
+  document.getElementById('modalDesc').textContent = d.desc;
+  document.getElementById('modalExample').textContent = d.example;
+  document.getElementById('modalBox').style.borderColor = d.border;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal(e) { if (e.target === document.getElementById('modalOverlay')) closeModalDirect(); }
+function closeModalDirect() { document.getElementById('modalOverlay').classList.remove('open'); }
+
+// ===== QUESTIONS =====
+const questions = [
+  {
+    category: "Situation en classe", cat: "?",
+    text: "Un enseignant demande à ses élèves de taper leur rédaction sur ordinateur au lieu de l'écrire à la main, sans aucune autre modification. Quel niveau SAMR est-ce ?",
+    options: ["Substitution","Augmentation","Modification","Redéfinition"],
+    correct: 0,
+    feedback: "C'est de la Substitution : la technologie remplace l'outil (papier → clavier) sans aucun changement fonctionnel. La tâche reste identique dans sa nature."
+  },
+  {
+    category: "Situation en classe", cat: "?",
+    text: "Les élèves utilisent un traitement de texte avec correcteur orthographique et dictionnaire intégré pour rédiger un texte. Quel niveau SAMR illustre cet usage ?",
+    options: ["Substitution","Augmentation","Modification","Redéfinition"],
+    correct: 1,
+    feedback: "Il s'agit d'Augmentation : le correcteur et le dictionnaire intégrés apportent une amélioration fonctionnelle réelle, mais la tâche fondamentale (rédiger un texte) reste la même."
+  },
+  {
+    category: "Situation en classe", cat: "?",
+    text: "Des élèves co-écrivent un document partagé en ligne, commentent le travail des autres en temps réel et voient les modifications instantanément. Quel niveau SAMR ?",
+    options: ["Substitution","Augmentation","Modification","Redéfinition"],
+    correct: 2,
+    feedback: "C'est de la Modification : la collaboration en temps réel et les commentaires instantanés redesignent significativement la tâche d'écriture, même si l'objectif (produire un texte) reste similaire."
+  },
+  {
+    category: "Situation en classe", cat: "?",
+    text: "Des élèves français collaborent avec une classe au Japon sur un projet commun en visioconférence, créant ensemble une exposition virtuelle accessible au monde entier. Quel niveau SAMR ?",
+    options: ["Substitution","Augmentation","Modification","Redéfinition"],
+    correct: 3,
+    feedback: "C'est de la Redéfinition : une collaboration internationale en temps réel avec création d'une exposition mondiale était totalement impossible sans le numérique."
+  },
+  {
+    category: "Situation en classe", cat: "?",
+    text: "Un professeur projette le contenu de son manuel au tableau via un rétroprojecteur numérique plutôt que de distribuer des livres papier. Quel niveau SAMR est-ce ?",
+    options: ["Substitution","Augmentation","Modification","Redéfinition"],
+    correct: 0,
+    feedback: "C'est de la Substitution : projeter le contenu d'un manuel remplace simplement le manuel papier. Il n'y a aucun changement fonctionnel dans la manière d'enseigner ou d'apprendre."
+  },
+  {
+    category: "Comprendre le modèle", cat: "?",
+    text: "Le modèle SAMR regroupe ses quatre niveaux en deux grandes zones. Laquelle de ces divisions est correcte ?",
+    options: ["Création (S, A) et Consommation (M, R)","Amélioration (S, A) et Transformation (M, R)","Numérique (S, M) et Hybride (A, R)","Apprentissage passif (S, R) et actif (A, M)"],
+    correct: 1,
+    feedback: "Le modèle SAMR distingue deux grandes zones : l'Amélioration (Substitution + Augmentation) et la Transformation (Modification + Redéfinition), où la technologie réinvente les pratiques."
+  },
+  {
+    category: "Identifier le bon niveau", cat: "?",
+    text: "Des élèves créent un podcast diffusé publiquement et reçoivent des retours d'auditeurs du monde entier. Parmi ces activités, laquelle correspond à ce même niveau SAMR ?",
+    options: ["Lire un manuel numérique sur une tablette","Utiliser un dictionnaire en ligne pendant une rédaction","Mener une enquête en direct avec des experts étrangers via vidéo","Faire un exposé avec des diapositives PowerPoint"],
+    correct: 2,
+    feedback: "Le podcast mondial et l'enquête en direct avec des experts étrangers sont tous deux de la Redéfinition : ces tâches globales étaient totalement impossibles avant le numérique."
+  },
+  {
+    category: "Situation en classe", cat: "?",
+    text: "Un enseignant filme ses élèves en train de faire un discours afin qu'ils puissent s'auto-évaluer en revoyant leur prestation. Quel niveau SAMR cela représente-t-il ?",
+    options: ["Substitution","Augmentation","Modification","Redéfinition"],
+    correct: 1,
+    feedback: "C'est de l'Augmentation : la vidéo apporte une amélioration fonctionnelle réelle à la tâche — l'auto-évaluation par le visionnage n'était pas possible avec l'outil traditionnel — sans transformer la nature de la tâche."
+  },
+  {
+    category: "Comprendre le modèle", cat: "?",
+    text: "Quelle affirmation sur le modèle SAMR est correcte ?",
+    options: ["Il faut toujours viser la Redéfinition, les autres niveaux étant insuffisants","Chaque enseignant doit franchir les niveaux dans l'ordre","C'est un cadre de réflexion sur la valeur ajoutée du numérique, sans hiérarchie de valeur absolue","La Substitution n'a aucune place dans une pédagogie numérique efficace"],
+    correct: 2,
+    feedback: "Le modèle SAMR est un cadre de réflexion, pas une échelle de jugement absolu. Parfois, la Substitution est tout à fait appropriée. L'objectif est d'aider les enseignants à questionner la valeur pédagogique de leurs usages."
+  },
+  {
+    category: "Situation en classe", cat: "?",
+    text: "Des élèves utilisent un simulateur numérique pour réaliser des expériences scientifiques dangereuses impossibles en vrai labo, en faisant varier les paramètres en temps réel. Quel niveau SAMR ?",
+    options: ["Substitution","Augmentation","Modification","Redéfinition"],
+    correct: 2,
+    feedback: "C'est de la Modification : le simulateur redesigne significativement la tâche expérimentale — tester des hypothèses impossibles en labo réel, varier infiniment les paramètres. Mais l'objectif pédagogique (apprendre par l'expérimentation) reste similaire."
+  }
+];
+
+// ===== STATE =====
+let currentQ = 0, score = 0, answered = false, prevRankLabel = 'Néophyte';
+let shuffledQuestions = [];
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function showIntro() {
+  ['intro','quiz','result'].forEach(id => document.getElementById(id).classList.remove('active'));
+  document.getElementById('intro').classList.add('active');
+}
+
+function startQuiz() {
+  currentQ = 0; score = 0; answered = false; prevRankLabel = 'Néophyte';
+  shuffledQuestions = shuffle(questions);
+  ['intro','quiz','result'].forEach(id => document.getElementById(id).classList.remove('active'));
+  document.getElementById('quiz').classList.add('active');
+  renderQuestion();
+}
+
+function updateRankUI(s, animate) {
+  const rank = getRank(s);
+  const badge = document.getElementById('rankBadge');
+  badge.textContent = rank.label;
+  badge.style.color = rank.color;
+  badge.style.borderColor = rank.border;
+  if (animate && rank.label !== prevRankLabel) {
+    const toast = document.getElementById('levelupToast');
+    toast.textContent = '⬆ ' + rank.label + ' !';
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2400);
+    setTimeout(playLevelUp, 100);
+    prevRankLabel = rank.label;
+  }
+}
+
+function renderQuestion() {
+  answered = false;
+  const q = shuffledQuestions[currentQ], total = shuffledQuestions.length;
+  document.getElementById('progressFill').style.width = ((currentQ / total) * 100) + '%';
+  document.getElementById('qCounter').textContent = `${currentQ+1}/${total}`;
+  document.getElementById('scoreDisplay').textContent = `★ ${score}`;
+  updateRankUI(score, false);
+
+  const cat = document.getElementById('qCategory');
+  cat.textContent = q.category;
+  cat.style.color = '#9090b8';
+  cat.style.borderColor = 'rgba(144,144,184,0.3)';
+  cat.style.background = 'rgba(144,144,184,0.06)';
+
+  document.getElementById('qText').textContent = q.text;
+
+  const grid = document.getElementById('optionsGrid');
+  grid.innerHTML = '';
+  ['A','B','C','D'].forEach((letter, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.innerHTML = `<span class="option-letter">${letter}</span><span>${q.options[i]}</span>`;
+    btn.onclick = () => selectAnswer(i);
+    grid.appendChild(btn);
+  });
+
+  document.getElementById('feedbackBox').className = 'feedback-box';
+  document.getElementById('btnNext').classList.remove('show');
+}
+
+function selectAnswer(idx) {
+  if (answered) return;
+  answered = true;
+  const q = shuffledQuestions[currentQ];
+  const buttons = document.querySelectorAll('.option-btn');
+  buttons.forEach(b => b.disabled = true);
+
+  if (idx === q.correct) {
+    buttons[idx].classList.add('correct');
+    score++;
+    playSuccess();
+    document.getElementById('scoreDisplay').textContent = `★ ${score}`;
+    updateRankUI(score, true);
+    showFeedback(true, q.feedback);
+  } else {
+    buttons[idx].classList.add('wrong');
+    buttons[q.correct].classList.add('reveal');
+    playFail();
+    showFeedback(false, q.feedback);
+  }
+
+  const btn = document.getElementById('btnNext');
+  btn.classList.add('show');
+  btn.textContent = currentQ < shuffledQuestions.length - 1 ? 'Question suivante →' : 'Voir les résultats →';
+}
+
+function showFeedback(ok, text) {
+  const fb = document.getElementById('feedbackBox');
+  fb.className = 'feedback-box show ' + (ok ? 'correct-fb' : 'wrong-fb');
+  document.getElementById('feedbackTitle').textContent = ok ? '✓ Bonne réponse !' : '✗ Pas tout à fait…';
+  document.getElementById('feedbackText').textContent = text;
+}
+
+function nextQuestion() {
+  currentQ++;
+  if (currentQ >= shuffledQuestions.length) { showResult(); return; }
+  document.getElementById('quiz').classList.remove('active');
+  setTimeout(() => {
+    renderQuestion();
+    document.getElementById('quiz').classList.add('active');
+  }, 50);
+}
+
+function showResult() {
+  document.getElementById('quiz').classList.remove('active');
+  document.getElementById('result').classList.add('active');
+
+  const rank = getRank(score);
+  const scoreEl = document.getElementById('resultScore');
+  scoreEl.textContent = score;
+  scoreEl.style.color = rank.color;
+
+  const rf = document.getElementById('resultRankFinal');
+  rf.textContent = rank.label;
+  rf.style.color = rank.color;
+  rf.style.borderColor = rank.border;
+
+  const starCount = Math.round((score / shuffledQuestions.length) * 5);
+  const starsRow = document.getElementById('starsRow');
+  starsRow.innerHTML = '';
+  for (let i = 0; i < 5; i++) {
+    const s = document.createElement('span');
+    s.className = 'star' + (i < starCount ? ' lit' : '');
+    s.textContent = '★';
+    s.style.color = i < starCount ? 'var(--gold)' : 'var(--border)';
+    if (i < starCount) s.style.animationDelay = (i * 0.12) + 's';
+    starsRow.appendChild(s);
+  }
+
+  const msgs = [
+    { min: 0,  msg: "Premiers pas avec le SAMR", desc: "C'est un début ! Relisez les définitions depuis l'accueil et retentez l'aventure — le modèle SAMR prend tout son sens avec la pratique !" },
+    { min: 2,  msg: "L'aventure commence !", desc: "Vous distinguez déjà quelques niveaux. Concentrez-vous sur la frontière entre Amélioration et Transformation pour progresser encore." },
+    { min: 4,  msg: "Sur la bonne voie", desc: "Bonne progression ! Affinez votre compréhension des niveaux Modification et Redéfinition, les plus transformateurs du modèle." },
+    { min: 6,  msg: "Connaisseur du numérique", desc: "Vous maîtrisez l'essentiel du modèle SAMR et savez identifier les niveaux d'intégration technologique avec justesse." },
+    { min: 8,  msg: "Expert SAMR !", desc: "Excellent ! Vous distinguez avec précision les quatre niveaux. Vous êtes prêt à guider vos collègues dans leurs pratiques numériques." },
+    { min: 10, msg: "Score parfait — Maître du SAMR", desc: "Exceptionnel ! Réponse correcte à chaque question. Votre compréhension du modèle SAMR est complète et nuancée." }
+  ];
+
+  let chosen = msgs[0];
+  for (const m of msgs) { if (score >= m.min) chosen = m; }
+  document.getElementById('resultMessage').textContent = chosen.msg;
+  document.getElementById('resultDesc').textContent = chosen.desc;
+}
+</script>
+</body>
+</html>
