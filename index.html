@@ -4,6 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>SAMR — Le jeu - Sébastien Dumortier</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SAMR">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+
+<!-- SEO -->
+<meta name="description" content="Testez vos connaissances sur le modèle pédagogique numérique SAMR en 10 questions.">
+
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -900,6 +915,15 @@ const questions = [
     feedback: "C'est de la Modification : le simulateur redesigne significativement la tâche expérimentale — tester des hypothèses impossibles en labo réel, varier infiniment les paramètres. Mais l'objectif pédagogique (apprendre par l'expérimentation) reste similaire."
   }
 ];
+
+// ===== SERVICE WORKER =====
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/SAMR/sw.js')
+      .then(reg => console.log('SW enregistré :', reg.scope))
+      .catch(err => console.warn('SW échec :', err));
+  });
+}
 
 // ===== STATE =====
 let currentQ = 0, score = 0, answered = false, prevRankLabel = 'Néophyte';
